@@ -1,0 +1,130 @@
+{
+  "info": {
+    "_postman_id": "ad6b51ea-20d1-4f09-a39e-6fd7fe379afe",
+    "name": "Maravilla Backend - TwelveData",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{backend_base_url}}/health",
+          "host": [
+            "{{backend_base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Market Data - Price",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{backend_base_url}}/api/v1/market-data/price?symbol={{symbol}}",
+          "host": [
+            "{{backend_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "market-data",
+            "price"
+          ],
+          "query": [
+            {
+              "key": "symbol",
+              "value": "{{symbol}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Market Data - Quote",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{backend_base_url}}/api/v1/market-data/quote?symbol={{symbol}}",
+          "host": [
+            "{{backend_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "market-data",
+            "quote"
+          ],
+          "query": [
+            {
+              "key": "symbol",
+              "value": "{{symbol}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Market Data - Time Series",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{backend_base_url}}/api/v1/market-data/time-series?symbol={{symbol}}&interval={{interval}}&outputsize={{outputsize}}",
+          "host": [
+            "{{backend_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "market-data",
+            "time-series"
+          ],
+          "query": [
+            {
+              "key": "symbol",
+              "value": "{{symbol}}"
+            },
+            {
+              "key": "interval",
+              "value": "{{interval}}"
+            },
+            {
+              "key": "outputsize",
+              "value": "{{outputsize}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "backend_base_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "symbol",
+      "value": "AAPL"
+    },
+    {
+      "key": "interval",
+      "value": "1day"
+    },
+    {
+      "key": "outputsize",
+      "value": "30"
+    }
+  ]
+}
