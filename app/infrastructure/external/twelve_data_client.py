@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from app.config.settings import Settings
 from app.domain.entities.market_data import PriceResponse, QuoteResponse, TimeSeriesRequest, TimeSeriesResponse
 from app.domain.ports.market_data_provider import MarketDataProviderPort
+from app.infrastructure.cache import RedisCache
 
 
 class TwelveDataClient(MarketDataProviderPort):
@@ -34,12 +35,29 @@ class TwelveDataClient(MarketDataProviderPort):
         return payload
 
     async def get_price(self, symbol: str) -> PriceResponse:
+        # Check cache
+        cache_key = f"asset:price:{symbol}"
+        cached = await RedisCache.get(cache_key)
+        if cached:
+            return PriceResponse(**cached)
+        
         payload = await self._get("/price", {"symbol": symbol})
-        return PriceResponse(symbol=symbol, price=float(payload["price"]))
+        response = PriceResponse(symbol=symbol, price=float(payload["price"]))
+        
+        # Cache for 1 hour
+        await RedisCache.set(cache_key, response.model_dump())
+        
+        return response
 
     async def get_quote(self, symbol: str) -> QuoteResponse:
+        # Check cache
+        cache_key = f"asset:quote:{symbol}"
+        cached = await RedisCache.get(cache_key)
+        if cached:
+            return QuoteResponse(**cached)
+        
         payload = await self._get("/quote", {"symbol": symbol})
-        return QuoteResponse(
+        response = QuoteResponse(
             symbol=payload.get("symbol", symbol),
             name=payload.get("name"),
             exchange=payload.get("exchange"),
@@ -54,8 +72,19 @@ class TwelveDataClient(MarketDataProviderPort):
             change=float(payload["change"]) if payload.get("change") else None,
             percent_change=float(payload["percent_change"]) if payload.get("percent_change") else None,
         )
+        
+        # Cache for 1 hour
+        await RedisCache.set(cache_key, response.model_dump())
+        
+        return response
 
     async def get_time_series(self, params: TimeSeriesRequest) -> TimeSeriesResponse:
+        # Check cache
+        cache_key = f"asset:timeseries:{params.symbol}:{params.interval}"
+        cached = await RedisCache.get(cache_key)
+        if cached:
+            return TimeSeriesResponse(**cached)
+        
         payload = await self._get(
             "/time_series",
             {
@@ -64,7 +93,12 @@ class TwelveDataClient(MarketDataProviderPort):
                 "outputsize": params.outputsize,
             },
         )
-        return TimeSeriesResponse(
+        response = TimeSeriesResponse(
             meta=payload.get("meta", {}),
             values=payload.get("values", []),
         )
+        
+        # Cache for 1 hour
+        await RedisCache.set(cache_key, response.model_dump())
+        
+        return response
