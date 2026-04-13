@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.interfaces.http.routes.market_data import router as market_data_router
+from app.interfaces.http.routes.auth import router as auth_router
 from app.interfaces.http.routes.portfolios import router as portfolios_router
 from app.interfaces.http.routes.holdings import router as holdings_router
 from app.interfaces.http.routes.performance import router as performance_router
@@ -30,7 +31,12 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Update in production
+    allow_origins=[
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://127.0.0.1:5174",
+        "http://localhost:5174",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -44,6 +50,7 @@ def health() -> dict[str, str]:
 
 # Include routers
 app.include_router(market_data_router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
 app.include_router(portfolios_router, prefix="/api/v1")
 app.include_router(holdings_router, prefix="/api/v1")
 app.include_router(performance_router, prefix="/api/v1")

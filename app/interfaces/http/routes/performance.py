@@ -3,8 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from decimal import Decimal
 
 from app.domain.schemas import PortfolioPerformance, HoldingSnapshot
+from app.interfaces.http.dependencies import get_current_user
 from app.infrastructure.database import get_db
-from app.infrastructure.repositories import PortfolioRepository, HoldingRepository
+from app.infrastructure.repositories import PortfolioRepository, HoldingRepository, ProfileRepository
 from app.infrastructure.cache import RedisCache
 from app.application.use_cases.market_data_service import MarketDataService
 from app.interfaces.http.dependencies import get_market_data_service
@@ -17,6 +18,7 @@ async def get_portfolio_performance(
     portfolio_id: int,
     session: AsyncSession = Depends(get_db),
     market_service: MarketDataService = Depends(get_market_data_service),
+    current_user=Depends(get_current_user),
 ):
     """
     Calculate portfolio performance:
@@ -34,6 +36,9 @@ async def get_portfolio_performance(
     portfolio = await PortfolioRepository.get_by_id(session, portfolio_id)
     if not portfolio:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
+    profile = await ProfileRepository.get_by_id(session, portfolio.profile_id)
+    if not profile or profile.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Portfolio does not belong to user")
 
     # Get holdings
     holdings = await HoldingRepository.list_by_portfolio(session, portfolio_id)
@@ -97,6 +102,7 @@ async def get_holdings_snapshot(
     portfolio_id: int,
     session: AsyncSession = Depends(get_db),
     market_service: MarketDataService = Depends(get_market_data_service),
+    current_user=Depends(get_current_user),
 ):
     """
     Get detailed snapshot of each holding with current prices and returns.
@@ -104,6 +110,9 @@ async def get_holdings_snapshot(
     portfolio = await PortfolioRepository.get_by_id(session, portfolio_id)
     if not portfolio:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
+    profile = await ProfileRepository.get_by_id(session, portfolio.profile_id)
+    if not profile or profile.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Portfolio does not belong to user")
 
     holdings = await HoldingRepository.list_by_portfolio(session, portfolio_id)
     

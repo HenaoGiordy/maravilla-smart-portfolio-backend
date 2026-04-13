@@ -31,6 +31,32 @@ async def apply_migrations():
             logger.info("Creating database schema from models...")
             await conn.run_sync(Base.metadata.create_all)
 
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)"))
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255)"))
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE"))
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS active_profile_id INTEGER"))
+            await conn.execute(text("ALTER TABLE investment_profiles ADD COLUMN IF NOT EXISTS score INTEGER"))
+
+            await conn.execute(
+                text(
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.table_constraints
+                            WHERE constraint_name = 'fk_users_active_profile_id'
+                            AND table_name = 'users'
+                        ) THEN
+                            ALTER TABLE users
+                            ADD CONSTRAINT fk_users_active_profile_id
+                            FOREIGN KEY (active_profile_id)
+                            REFERENCES investment_profiles (id);
+                        END IF;
+                    END $$;
+                    """
+                )
+            )
+
             # Cleanup legacy singular tables created during bootstrap fallback
             await conn.execute(text("DROP TABLE IF EXISTS holding CASCADE"))
             await conn.execute(text("DROP TABLE IF EXISTS portfolio CASCADE"))

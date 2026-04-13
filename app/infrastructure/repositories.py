@@ -9,8 +9,21 @@ class UserRepository:
     """Repository for User operations."""
 
     @staticmethod
-    async def create(session: AsyncSession, email: str, name: str) -> User:
-        user = User(email=email, name=name)
+    async def create(
+        session: AsyncSession,
+        email: str,
+        name: str,
+        phone: str,
+        location: str,
+        password_hash: str,
+    ) -> User:
+        user = User(
+            email=email,
+            name=name,
+            phone=phone,
+            location=location,
+            password_hash=password_hash,
+        )
         session.add(user)
         await session.commit()
         await session.refresh(user)
@@ -26,18 +39,39 @@ class UserRepository:
         result = await session.execute(select(User).where(User.email == email))
         return result.scalars().first()
 
+    @staticmethod
+    async def update(session: AsyncSession, user_id: int, **kwargs) -> Optional[User]:
+        user = await UserRepository.get_by_id(session, user_id)
+        if user:
+            for key, value in kwargs.items():
+                setattr(user, key, value)
+            await session.commit()
+            await session.refresh(user)
+        return user
+
 
 class ProfileRepository:
     """Repository for InvestmentProfile operations."""
 
     @staticmethod
-    async def create(session: AsyncSession, user_id: int, name: str, risk_level: str, volatility_target: float, expected_return: str = None) -> InvestmentProfile:
+    async def create(
+        session: AsyncSession,
+        user_id: int,
+        name: str,
+        risk_level: str,
+        volatility_target: float,
+        expected_return: str = None,
+        description: str = None,
+        score: int = None,
+    ) -> InvestmentProfile:
         profile = InvestmentProfile(
             user_id=user_id,
             name=name,
             risk_level=risk_level,
             volatility_target=volatility_target,
             expected_return=expected_return,
+            description=description,
+            score=score,
         )
         session.add(profile)
         await session.commit()

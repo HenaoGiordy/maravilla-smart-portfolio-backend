@@ -6,8 +6,9 @@ from app.domain.schemas import (
     HoldingResponse,
     HoldingUpdate,
 )
+from app.interfaces.http.dependencies import get_current_user
 from app.infrastructure.database import get_db
-from app.infrastructure.repositories import HoldingRepository, PortfolioRepository
+from app.infrastructure.repositories import HoldingRepository, PortfolioRepository, ProfileRepository
 from app.infrastructure.cache import RedisCache
 
 router = APIRouter(prefix="/holdings", tags=["holdings"])
@@ -18,12 +19,16 @@ async def create_holding(
     portfolio_id: int,
     holding: HoldingCreate,
     session: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     """Add a new asset holding to portfolio."""
     # Verify portfolio exists
     portfolio = await PortfolioRepository.get_by_id(session, portfolio_id)
     if not portfolio:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
+    profile = await ProfileRepository.get_by_id(session, portfolio.profile_id)
+    if not profile or profile.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Portfolio does not belong to user")
 
     # Create holding
     new_holding = await HoldingRepository.create(
@@ -47,11 +52,16 @@ async def create_holding(
 async def get_holding(
     holding_id: int,
     session: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     """Get holding details."""
     holding = await HoldingRepository.get_by_id(session, holding_id)
     if not holding:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Holding not found")
+    portfolio = await PortfolioRepository.get_by_id(session, holding.portfolio_id)
+    profile = await ProfileRepository.get_by_id(session, portfolio.profile_id) if portfolio else None
+    if not profile or profile.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Holding does not belong to user")
     return holding
 
 
@@ -59,8 +69,15 @@ async def get_holding(
 async def list_holdings(
     portfolio_id: int,
     session: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     """List all holdings in a portfolio."""
+    portfolio = await PortfolioRepository.get_by_id(session, portfolio_id)
+    if not portfolio:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
+    profile = await ProfileRepository.get_by_id(session, portfolio.profile_id)
+    if not profile or profile.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Portfolio does not belong to user")
     holdings = await HoldingRepository.list_by_portfolio(session, portfolio_id)
     return holdings
 
@@ -70,11 +87,17 @@ async def update_holding(
     holding_id: int,
     holding_update: HoldingUpdate,
     session: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     """Update holding."""
     holding = await HoldingRepository.get_by_id(session, holding_id)
     if not holding:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Holding not found")
+
+    portfolio = await PortfolioRepository.get_by_id(session, holding.portfolio_id)
+    profile = await ProfileRepository.get_by_id(session, portfolio.profile_id) if portfolio else None
+    if not profile or profile.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Holding does not belong to user")
     
     portfolio_id = holding.portfolio_id
     
@@ -95,11 +118,17 @@ async def update_holding(
 async def delete_holding(
     holding_id: int,
     session: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     """Delete holding."""
     holding = await HoldingRepository.get_by_id(session, holding_id)
     if not holding:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Holding not found")
+
+    portfolio = await PortfolioRepository.get_by_id(session, holding.portfolio_id)
+    profile = await ProfileRepository.get_by_id(session, portfolio.profile_id) if portfolio else None
+    if not profile or profile.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Holding does not belong to user")
     
     portfolio_id = holding.portfolio_id
     success = await HoldingRepository.delete(session, holding_id)

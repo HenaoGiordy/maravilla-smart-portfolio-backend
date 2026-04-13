@@ -15,12 +15,22 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=False)
-    password_hash = Column(String(255), nullable=True)  # For future auth
+    phone = Column(String(30), nullable=False)
+    location = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    onboarding_completed = Column(Boolean, default=False, nullable=False)
+    active_profile_id = Column(Integer, ForeignKey("investment_profiles.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    profiles = relationship("InvestmentProfile", back_populates="user", cascade="all, delete-orphan")
+    profiles = relationship(
+        "InvestmentProfile",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="InvestmentProfile.user_id",
+    )
+    active_profile = relationship("InvestmentProfile", foreign_keys=[active_profile_id], post_update=True)
 
 
 class InvestmentProfile(Base):
@@ -33,13 +43,14 @@ class InvestmentProfile(Base):
     risk_level = Column(String(50), nullable=False)  # low, medium, high
     volatility_target = Column(Numeric(5, 2), nullable=False)  # 4-6, 7-10, 12-18
     expected_return = Column(String(100), nullable=True)  # "4-6%", "7-10%", etc.
+    score = Column(Integer, nullable=True)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    user = relationship("User", back_populates="profiles")
+    user = relationship("User", back_populates="profiles", foreign_keys=[user_id])
     portfolios = relationship("Portfolio", back_populates="profile", cascade="all, delete-orphan")
 
     __table_args__ = (Index("idx_user_profile", "user_id"),)

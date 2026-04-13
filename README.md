@@ -106,6 +106,14 @@ source .venv/bin/activate \
 - `GET /api/v1/market-data/quote?symbol=AAPL`
 - `GET /api/v1/market-data/time-series?symbol=AAPL&interval=1day&outputsize=30`
 
+### Auth (JWT access + refresh)
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+- `GET /api/v1/auth/me`
+- `GET /api/v1/auth/active-profile`
+- `POST /api/v1/auth/quiz-profile`
+
 ### Portafolios
 - `POST /api/v1/portfolios?profile_id={id}`
 - `GET /api/v1/portfolios?profile_id={id}`
@@ -144,19 +152,22 @@ En holdings, los campos `asset_class` e `income_type` permiten reflejar tipos de
 - Renta fija: bonos, CDT, TES (`asset_class`/`income_type` orientados a instrumentos de deuda e interés).
 - Renta variable: acciones y activos volátiles (`asset_class` orientado a renta variable).
 
-## ¿Está cumpliendo integración con frontend?
+## Integración frontend-backend
 
-En este workspace, el frontend actual (`src/App.tsx`) está en modo base y no realiza llamadas HTTP todavía. Eso significa:
+Flujos integrados:
 
-- El backend ya expone contrato listo para integración (`/api/v1/...`).
-- La integración efectiva front↔back no está implementada en este código frontend actual.
+1. Registro -> Cuestionario -> Resultado perfil -> Inicio.
+2. Login -> Inicio.
 
-Para validar integración cuando conectes el front:
+Puntos de integración clave:
 
-1. Configura `VITE_API_BASE_URL=http://127.0.0.1:8001`.
-2. Desde el front, consume los endpoints de `portfolios`, `holdings` y `performance`.
-3. Verifica en Network del navegador respuestas `200/201` y payload esperado.
-4. Revisa en `/docs` que el request/response coincide con lo que renderiza el front.
+- Front usa `VITE_API_BASE_URL=http://127.0.0.1:8001`.
+- Registro/login retornan `access_token` + `refresh_token`.
+- Cuestionario (10 preguntas) envía puntajes `1..3` y el backend clasifica:
+	- Conservador: `10-15`
+	- Moderado: `16-22`
+	- Agresivo: `23-30`
+- El perfil recomendado se guarda como perfil activo del usuario.
 
 ## Notas técnicas
 

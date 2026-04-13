@@ -9,12 +9,19 @@ from pydantic import BaseModel
 class UserCreate(BaseModel):
     email: str
     name: str
+    phone: str
+    location: str
+    password: str
+    confirm_password: str
 
 
 class UserResponse(BaseModel):
     id: int
     email: str
     name: str
+    phone: Optional[str] = None
+    location: Optional[str] = None
+    onboarding_completed: bool
     created_at: datetime
 
     class Config:
@@ -37,6 +44,7 @@ class ProfileResponse(BaseModel):
     risk_level: str
     volatility_target: float
     expected_return: Optional[str] = None
+    score: Optional[int] = None
     description: Optional[str] = None
     is_active: bool
     created_at: datetime
@@ -125,3 +133,41 @@ class HoldingSnapshot(BaseModel):
     return_percentage: float
     asset_class: str
     percentage_of_portfolio: float
+
+
+# ============ Auth Models ============
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class TokenPairResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+
+class AuthResponse(BaseModel):
+    user: UserResponse
+    tokens: TokenPairResponse
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
+class QuizAnswer(BaseModel):
+    question_id: int
+    score: int
+
+
+class QuizSubmissionRequest(BaseModel):
+    answers: list[QuizAnswer]
+
+
+class QuizProfileResult(BaseModel):
+    score: int
+    profile_name: str
+    risk_level: str
+    expected_return: str
+    description: str
