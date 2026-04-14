@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,6 +30,7 @@ app = FastAPI(
 )
 
 # CORS middleware
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -36,7 +38,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5174",
         "http://localhost:5174",
-        "https://${{ maravilla-smart-portfolio-frontend.RAILWAY_PUBLIC_DOMAIN }}"
+        frontend_url,
     ],
     allow_credentials=True,
     allow_methods=["*"],
