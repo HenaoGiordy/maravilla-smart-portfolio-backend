@@ -51,6 +51,11 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/debug/frontend-url")
+def debug_frontend_url() -> dict[str, str]:
+    return {"FRONTEND_URL": os.getenv("FRONTEND_URL", "NOT SET")}
+
+
 # Include routers
 app.include_router(market_data_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
