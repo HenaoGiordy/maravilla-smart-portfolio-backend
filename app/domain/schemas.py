@@ -28,6 +28,22 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 
+class UserUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    location: Optional[str] = None
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
 # ============ Investment Profile Models ============
 class ProfileCreate(BaseModel):
     name: str

@@ -6,13 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.entities.portfolio import InvestmentProfile
 from app.domain.schemas import (
     AuthResponse,
+    ChangePasswordRequest,
     LoginRequest,
+    MessageResponse,
     ProfileResponse,
     QuizProfileResult,
     QuizSubmissionRequest,
     RefreshTokenRequest,
     TokenPairResponse,
     UserCreate,
+    UserUpdateRequest,
     UserResponse,
 )
 from app.infrastructure.database import get_db
@@ -117,6 +120,50 @@ async def refresh_token(payload: RefreshTokenRequest, session: AsyncSession = De
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user=Depends(get_current_user)):
     return UserResponse.model_validate(current_user)
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    payload: UserUpdateRequest,
+    session: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    updates = payload.model_dump(exclude_unset=True)
+    if not updates:
+        return UserResponse.model_validate(current_user)
+
+    new_email = updates.get("email")
+    if new_email and new_email != current_user.email:
+        existing_user = await UserRepository.get_by_email(session, new_email)
+        if existing_user and existing_user.id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is already registered")
+
+    updated_user = await UserRepository.update(session, current_user.id, **updates)
+    if not updated_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    return UserResponse.model_validate(updated_user)
+
+
+@router.post("/change-password", response_model=MessageResponse)
+async def change_password(
+    payload: ChangePasswordRequest,
+    session: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+
+    if payload.current_password == payload.new_password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be different")
+
+    await UserRepository.update(
+        session,
+        current_user.id,
+        password_hash=get_password_hash(payload.new_password),
+    )
+
+    return MessageResponse(message="Password updated successfully")
 
 
 @router.get("/active-profile", response_model=ProfileResponse)
