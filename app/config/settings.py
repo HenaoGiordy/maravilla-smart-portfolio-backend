@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     database_echo: bool = False
 
     # Redis
-    redis_url: str
+    redis_url: str = ""
     cache_ttl_seconds: int = 3600  # 1 hour
 
     # App
