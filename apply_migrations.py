@@ -36,6 +36,8 @@ async def apply_migrations():
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE"))
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS active_profile_id INTEGER"))
             await conn.execute(text("ALTER TABLE investment_profiles ADD COLUMN IF NOT EXISTS score INTEGER"))
+            await conn.execute(text("ALTER TABLE investment_profiles ADD COLUMN IF NOT EXISTS equity_allocation NUMERIC(5,2) NOT NULL DEFAULT 0"))
+            await conn.execute(text("ALTER TABLE investment_profiles ADD COLUMN IF NOT EXISTS fixed_income_allocation NUMERIC(5,2) NOT NULL DEFAULT 0"))
 
             await conn.execute(
                 text(

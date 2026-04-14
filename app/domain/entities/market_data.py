@@ -33,3 +33,12 @@ class TimeSeriesRequest(BaseModel):
 class TimeSeriesResponse(BaseModel):
     meta: dict[str, Any]
     values: list[dict[str, Any]]
+
+
+class DailyGainItem(BaseModel):
+    symbol: str
+    name: str | None = None
+    close: float | None = None
+    change: float | None = None
+    percent_change: float | None = None
+    annual_return: float | None = None

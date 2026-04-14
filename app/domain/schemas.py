@@ -62,6 +62,8 @@ class ProfileResponse(BaseModel):
     expected_return: Optional[str] = None
     score: Optional[int] = None
     description: Optional[str] = None
+    equity_allocation: float
+    fixed_income_allocation: float
     is_active: bool
     created_at: datetime
 

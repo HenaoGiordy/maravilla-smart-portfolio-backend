@@ -62,6 +62,8 @@ class ProfileRepository:
         volatility_target: float,
         expected_return: str = None,
         description: str = None,
+        equity_allocation: float = 0.0,
+        fixed_income_allocation: float = 0.0,
         score: int = None,
     ) -> InvestmentProfile:
         profile = InvestmentProfile(
@@ -71,6 +73,8 @@ class ProfileRepository:
             volatility_target=volatility_target,
             expected_return=expected_return,
             description=description,
+            equity_allocation=equity_allocation,
+            fixed_income_allocation=fixed_income_allocation,
             score=score,
         )
         session.add(profile)

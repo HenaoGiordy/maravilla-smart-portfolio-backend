@@ -45,6 +45,8 @@ class InvestmentProfile(Base):
     expected_return = Column(String(100), nullable=True)  # "4-6%", "7-10%", etc.
     score = Column(Integer, nullable=True)
     description = Column(Text, nullable=True)
+    equity_allocation = Column(Numeric(5, 2), nullable=False, default=0)
+    fixed_income_allocation = Column(Numeric(5, 2), nullable=False, default=0)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

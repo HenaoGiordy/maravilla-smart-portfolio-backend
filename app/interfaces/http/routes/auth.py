@@ -39,6 +39,8 @@ PROFILE_RULES = {
         "expected_return": "3-6%",
         "volatility_target": 6.0,
         "description": "Preservación de capital, baja tolerancia al riesgo y horizonte corto.",
+        "equity_allocation": 20.0,
+        "fixed_income_allocation": 80.0,
     },
     "moderado": {
         "name": "Moderado",
@@ -46,6 +48,8 @@ PROFILE_RULES = {
         "expected_return": "6-12%",
         "volatility_target": 12.0,
         "description": "Balance entre crecimiento y estabilidad, tolerancia media al riesgo.",
+        "equity_allocation": 50.0,
+        "fixed_income_allocation": 50.0,
     },
     "agresivo": {
         "name": "Agresivo",
@@ -53,6 +57,8 @@ PROFILE_RULES = {
         "expected_return": ">12%",
         "volatility_target": 20.0,
         "description": "Búsqueda de alto crecimiento con alta tolerancia a volatilidad y pérdidas.",
+        "equity_allocation": 80.0,
+        "fixed_income_allocation": 20.0,
     },
 }
 
@@ -223,6 +229,8 @@ async def submit_quiz_profile(
         volatility_target=profile_data["volatility_target"],
         expected_return=profile_data["expected_return"],
         description=profile_data["description"],
+        equity_allocation=profile_data["equity_allocation"],
+        fixed_income_allocation=profile_data["fixed_income_allocation"],
         score=total_score,
     )
 
