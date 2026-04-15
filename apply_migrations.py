@@ -38,23 +38,6 @@ async def apply_migrations():
             await conn.execute(text("ALTER TABLE investment_profiles ADD COLUMN IF NOT EXISTS score INTEGER"))
             await conn.execute(text("ALTER TABLE investment_profiles ADD COLUMN IF NOT EXISTS equity_allocation NUMERIC(5,2) NOT NULL DEFAULT 0"))
             await conn.execute(text("ALTER TABLE investment_profiles ADD COLUMN IF NOT EXISTS fixed_income_allocation NUMERIC(5,2) NOT NULL DEFAULT 0"))
-            await conn.execute(
-                text(
-                    """
-                    CREATE TABLE IF NOT EXISTS notification_preferences (
-                        id SERIAL PRIMARY KEY,
-                        user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-                        enabled BOOLEAN NOT NULL DEFAULT FALSE,
-                        frequency VARCHAR(20) NOT NULL DEFAULT 'daily',
-                        delivery_hour INTEGER NOT NULL DEFAULT 8,
-                        last_sent_at TIMESTAMP WITHOUT TIME ZONE,
-                        created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
-                        updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
-                    )
-                    """
-                )
-            )
-            await conn.execute(text("ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS last_sent_at TIMESTAMP WITHOUT TIME ZONE"))
 
             await conn.execute(
                 text(

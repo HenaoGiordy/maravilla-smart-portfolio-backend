@@ -7,8 +7,6 @@ from sqlalchemy.orm import relationship
 
 from app.infrastructure.database import Base
 
-CASCADING_DELETE_ORPHAN = "all, delete-orphan"
-
 
 class User(Base):
     """User model."""
@@ -29,16 +27,10 @@ class User(Base):
     profiles = relationship(
         "InvestmentProfile",
         back_populates="user",
-        cascade=CASCADING_DELETE_ORPHAN,
+        cascade="all, delete-orphan",
         foreign_keys="InvestmentProfile.user_id",
     )
     active_profile = relationship("InvestmentProfile", foreign_keys=[active_profile_id], post_update=True)
-    notification_preference = relationship(
-        "NotificationPreference",
-        back_populates="user",
-        cascade=CASCADING_DELETE_ORPHAN,
-        uselist=False,
-    )
 
 
 class InvestmentProfile(Base):
@@ -61,7 +53,7 @@ class InvestmentProfile(Base):
 
     # Relationships
     user = relationship("User", back_populates="profiles", foreign_keys=[user_id])
-    portfolios = relationship("Portfolio", back_populates="profile", cascade=CASCADING_DELETE_ORPHAN)
+    portfolios = relationship("Portfolio", back_populates="profile", cascade="all, delete-orphan")
 
     __table_args__ = (Index("idx_user_profile", "user_id"),)
 
@@ -80,7 +72,7 @@ class Portfolio(Base):
 
     # Relationships
     profile = relationship("InvestmentProfile", back_populates="portfolios")
-    holdings = relationship("Holding", back_populates="portfolio", cascade=CASCADING_DELETE_ORPHAN)
+    holdings = relationship("Holding", back_populates="portfolio", cascade="all, delete-orphan")
 
     __table_args__ = (Index("idx_profile_portfolio", "profile_id"),)
 
@@ -135,19 +127,3 @@ class AssetReference(Base):
     asset_type = Column(String(50), nullable=True)  # stock, crypto, forex, etc.
     currency = Column(String(10), nullable=True)
     last_cached = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-
-class NotificationPreference(Base):
-    """User notification settings for variable income updates."""
-    __tablename__ = "notification_preferences"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True, index=True)
-    enabled = Column(Boolean, nullable=False, default=False)
-    frequency = Column(String(20), nullable=False, default="daily")
-    delivery_hour = Column(Integer, nullable=False, default=8)
-    last_sent_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    user = relationship("User", back_populates="notification_preference")

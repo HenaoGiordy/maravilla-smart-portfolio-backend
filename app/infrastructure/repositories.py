@@ -1,9 +1,8 @@
-from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
-from app.domain.entities.portfolio import Holding, InvestmentProfile, NotificationPreference, Portfolio, User
+from app.domain.entities.portfolio import User, InvestmentProfile, Portfolio, Holding
 
 
 class UserRepository:
@@ -182,75 +181,3 @@ class HoldingRepository:
             await session.commit()
             return True
         return False
-
-
-class NotificationPreferenceRepository:
-    """Repository for user notification preferences."""
-
-    @staticmethod
-    async def get_by_user_id(session: AsyncSession, user_id: int) -> Optional[NotificationPreference]:
-        result = await session.execute(
-            select(NotificationPreference).where(NotificationPreference.user_id == user_id)
-        )
-        return result.scalars().first()
-
-    @staticmethod
-    async def get_or_create_default(session: AsyncSession, user_id: int) -> NotificationPreference:
-        preference = await NotificationPreferenceRepository.get_by_user_id(session, user_id)
-        if preference:
-            return preference
-
-        preference = NotificationPreference(
-            user_id=user_id,
-            enabled=False,
-            frequency="daily",
-            delivery_hour=8,
-        )
-        session.add(preference)
-        await session.commit()
-        await session.refresh(preference)
-        return preference
-
-    @staticmethod
-    async def update(
-        session: AsyncSession,
-        user_id: int,
-        *,
-        enabled: bool,
-        frequency: str,
-        delivery_hour: int,
-    ) -> NotificationPreference:
-        preference = await NotificationPreferenceRepository.get_or_create_default(session, user_id)
-        preference.enabled = enabled
-        preference.frequency = frequency
-        preference.delivery_hour = delivery_hour
-        await session.commit()
-        await session.refresh(preference)
-        return preference
-
-    @staticmethod
-    async def list_enabled_for_hour(session: AsyncSession, delivery_hour: int) -> List[tuple[NotificationPreference, User]]:
-        result = await session.execute(
-            select(NotificationPreference, User)
-            .join(User, NotificationPreference.user_id == User.id)
-            .where(
-                and_(
-                    NotificationPreference.enabled.is_(True),
-                    NotificationPreference.delivery_hour == delivery_hour,
-                )
-            )
-        )
-        return list(result.all())
-
-    @staticmethod
-    async def mark_sent(session: AsyncSession, preference_id: int, sent_at: datetime) -> Optional[NotificationPreference]:
-        result = await session.execute(
-            select(NotificationPreference).where(NotificationPreference.id == preference_id)
-        )
-        preference = result.scalars().first()
-        if not preference:
-            return None
-        preference.last_sent_at = sent_at
-        await session.commit()
-        await session.refresh(preference)
-        return preference
