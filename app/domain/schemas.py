@@ -1,6 +1,6 @@
 from datetime import datetime, date
 from decimal import Decimal
-from typing import Optional, List
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel
 
@@ -42,6 +42,32 @@ class ChangePasswordRequest(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
+
+class NotificationSettingsUpdateRequest(BaseModel):
+    enabled: bool
+    frequency: Literal["daily", "weekly", "monthly"]
+    delivery_hour: int
+
+    class Config:
+        json_schema_extra = {
+            "examples": [
+                {
+                    "enabled": True,
+                    "frequency": "daily",
+                    "delivery_hour": 8,
+                }
+            ]
+        }
+
+
+class NotificationSettingsResponse(BaseModel):
+    enabled: bool
+    frequency: Literal["daily", "weekly", "monthly"]
+    delivery_hour: int
+
+    class Config:
+        from_attributes = True
 
 
 # ============ Investment Profile Models ============
