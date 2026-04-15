@@ -46,6 +46,34 @@ DATABASE_URL=postgresql+asyncpg://root:root@localhost:5432/maravilla_db
 REDIS_URL=redis://localhost:6379/0
 ```
 
+Para habilitar notificaciones por AWS SNS/SQS agrega:
+
+```env
+NOTIFICATIONS_ENABLED=false
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_SNS_TOPIC_ARN=
+AWS_SQS_QUEUE_URL=
+AWS_SQS_WAIT_TIME_SECONDS=10
+AWS_SQS_MAX_MESSAGES=10
+AWS_SQS_VISIBILITY_TIMEOUT_SECONDS=30
+EMAIL_PROVIDER=smtp
+SMTP_HOST=smtp.mailtrap.io
+SMTP_PORT=587
+SMTP_USERNAME=
+SMTP_PASSWORD=
+SMTP_USE_TLS=true
+SMTP_SENDER_EMAIL=no-reply@tu-dominio.com
+
+# Opcional (si usas SES como fallback)
+AWS_SES_SENDER_EMAIL=
+AWS_SES_CONFIGURATION_SET=
+
+NOTIFICATIONS_EMAIL_SUBJECT_PREFIX=[Maravilla]
+NOTIFICATIONS_SCHEDULER_INTERVAL_SECONDS=60
+```
+
 > Si usas tus propios contenedores/credenciales, cambia `DATABASE_URL` y `REDIS_URL`.
 
 ## Levantar servicio local (paso a paso)
@@ -80,6 +108,56 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 
 API base local: `http://127.0.0.1:8001`
 
+## Worker de notificaciones (SQS)
+
+Cuando `NOTIFICATIONS_ENABLED=true`, puedes consumir eventos de notificación con:
+
+```bash
+python -m app.workers.notification_sqs_worker
+```
+
+Eventos publicados actualmente:
+
+- `user_registered`
+- `profile_assigned`
+- `variable_income_update`
+
+El worker consume desde SQS y envía correo transaccional según `EMAIL_PROVIDER` (`smtp` por defecto, `ses` opcional).
+
+## Envío real a Gmail (producción/demo)
+
+Para enviar correos reales a usuarios (no sandbox), usa SMTP de Gmail con App Password:
+
+1. En tu cuenta Google activa **2-Step Verification**.
+2. Genera un **App Password** para "Mail".
+3. Configura en `.env`:
+
+```env
+EMAIL_PROVIDER=smtp
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=tu_correo@gmail.com
+SMTP_PASSWORD=tu_app_password_de_16_caracteres
+SMTP_USE_TLS=true
+SMTP_SENDER_EMAIL=tu_correo@gmail.com
+```
+
+> Nota: con Mailtrap Sandbox los correos no llegan a Gmail real; solo se visualizan dentro de Mailtrap.
+
+## Worker de programación de notificaciones
+
+Publica automáticamente eventos de `variable_income_update` según `frecuencia + hora` configurada por usuario:
+
+```bash
+python -m app.workers.notification_schedule_worker
+```
+
+Reglas de frecuencia:
+
+- `daily`: 1 envío por día
+- `weekly`: 1 envío por semana ISO
+- `monthly`: 1 envío por mes
+
 ## Bootstrap rápido (un solo flujo)
 
 ```bash
@@ -113,6 +191,9 @@ source .venv/bin/activate \
 - `GET /api/v1/auth/me`
 - `GET /api/v1/auth/active-profile`
 - `POST /api/v1/auth/quiz-profile`
+- `GET /api/v1/auth/notifications/settings`
+- `PUT /api/v1/auth/notifications/settings`
+- `POST /api/v1/auth/notifications/send-now`
 
 ### Portafolios
 - `POST /api/v1/portfolios?profile_id={id}`
