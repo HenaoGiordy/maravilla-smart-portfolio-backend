@@ -42,13 +42,13 @@ async def test_update_notification_settings_rejects_invalid_hour() -> None:
 async def test_send_notification_now_queues_event(monkeypatch: pytest.MonkeyPatch) -> None:
     current_user = SimpleNamespace(id=55, email="test@example.com")
 
-    send_now_mock = AsyncMock()
-    monkeypatch.setattr(auth_module, "_send_auth_notification_now", send_now_mock)
+    dispatch_mock = Mock()
+    monkeypatch.setattr(auth_module, "_dispatch_auth_notification", dispatch_mock)
 
     response = await auth_module.send_notification_now(current_user=current_user)
 
-    assert response.message == "Notification sent successfully"
-    send_now_mock.assert_awaited_once_with(
+    assert response.message == "Notification queued successfully"
+    dispatch_mock.assert_called_once_with(
         event_type="variable_income_update",
         user_id=55,
         email="test@example.com",
