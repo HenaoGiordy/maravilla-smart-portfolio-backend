@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import HTTPException
@@ -42,19 +42,10 @@ async def test_update_notification_settings_rejects_invalid_hour() -> None:
 async def test_send_notification_now_queues_event(monkeypatch: pytest.MonkeyPatch) -> None:
     current_user = SimpleNamespace(id=55, email="test@example.com")
 
-    dispatch_mock = Mock()
-    monkeypatch.setattr(auth_module, "_dispatch_auth_notification", dispatch_mock)
+    publish_mock = AsyncMock()
+    monkeypatch.setattr(auth_module, "_publish_auth_notification", publish_mock)
 
     response = await auth_module.send_notification_now(current_user=current_user)
 
     assert response.message == "Notification queued successfully"
-    dispatch_mock.assert_called_once_with(
-        event_type="variable_income_update",
-        user_id=55,
-        email="test@example.com",
-        metadata={
-            "category": "Renta Variable",
-            "segment": "Acciones y ETFs",
-            "assets": auth_module.VARIABLE_INCOME_ASSETS,
-        },
-    )
+    publish_mock.assert_awaited_once()

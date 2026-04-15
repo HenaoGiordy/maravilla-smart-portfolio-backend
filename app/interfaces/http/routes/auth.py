@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from datetime import UTC, datetime
 from typing import Annotated, Any
@@ -126,12 +125,11 @@ async def _publish_auth_notification(event_type: str, user_id: int, email: str, 
     settings = get_settings()
     if str(getattr(settings, "email_provider", "smtp")).lower() == "smtp":
         try:
-            await asyncio.to_thread(
-                _send_auth_notification_email_fallback,
-                event_type,
-                user_id,
-                email,
-                metadata,
+            _send_auth_notification_email_fallback(
+                event_type=event_type,
+                user_id=user_id,
+                email=email,
+                metadata=metadata,
             )
             logger.warning("SMTP direct email sent: event_type=%s user_id=%s", event_type, user_id)
         except Exception:
@@ -149,35 +147,15 @@ async def _publish_auth_notification(event_type: str, user_id: int, email: str, 
     except Exception:
         logger.exception("Unable to publish auth notification event: %s", event_type)
         try:
-            await asyncio.to_thread(
-                _send_auth_notification_email_fallback,
-                event_type,
-                user_id,
-                email,
-                metadata,
+            _send_auth_notification_email_fallback(
+                event_type=event_type,
+                user_id=user_id,
+                email=email,
+                metadata=metadata,
             )
             logger.info("Fallback email sent directly: event_type=%s user_id=%s", event_type, user_id)
         except Exception:
             logger.exception("Unable to send fallback auth notification email: %s", event_type)
-
-
-def _on_notification_task_done(task: asyncio.Task[None]) -> None:
-    try:
-        task.result()
-    except Exception:
-        logger.exception("Unhandled error in background notification task")
-
-
-def _dispatch_auth_notification(event_type: str, user_id: int, email: str, metadata: dict[str, Any]) -> None:
-    task = asyncio.create_task(
-        _publish_auth_notification(
-            event_type=event_type,
-            user_id=user_id,
-            email=email,
-            metadata=metadata,
-        )
-    )
-    task.add_done_callback(_on_notification_task_done)
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
@@ -203,7 +181,7 @@ async def register_user(payload: UserCreate, session: Annotated[AsyncSession, De
         refresh_token=create_refresh_token(user.id),
     )
 
-    _dispatch_auth_notification(
+    await _publish_auth_notification(
         event_type="user_registered",
         user_id=user.id,
         email=user.email,
@@ -365,7 +343,7 @@ async def submit_quiz_profile(
         active_profile_id=profile.id,
     )
 
-    _dispatch_auth_notification(
+    await _publish_auth_notification(
         event_type="profile_assigned",
         user_id=current_user.id,
         email=current_user.email,
@@ -416,7 +394,7 @@ async def update_notification_settings(
 
 @router.post("/notifications/send-now", response_model=MessageResponse)
 async def send_notification_now(current_user: Annotated[Any, Depends(get_current_user)]):
-    _dispatch_auth_notification(
+    await _publish_auth_notification(
         event_type="variable_income_update",
         user_id=current_user.id,
         email=current_user.email,
