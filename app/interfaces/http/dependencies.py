@@ -4,10 +4,8 @@ from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.use_cases.market_data_service import MarketDataService
-from app.application.use_cases.notification_service import NotificationService
 from app.config.settings import get_settings
 from app.infrastructure.database import get_db
-from app.infrastructure.external.sns_notification_publisher import SnsNotificationPublisher
 from app.infrastructure.external.twelve_data_client import TwelveDataClient
 from app.infrastructure.repositories import UserRepository
 from app.infrastructure.security import decode_token
@@ -19,12 +17,6 @@ def get_market_data_service() -> MarketDataService:
     settings = get_settings()
     provider = TwelveDataClient(settings=settings)
     return MarketDataService(market_data_provider=provider)
-
-
-def get_notification_service() -> NotificationService:
-    settings = get_settings()
-    publisher = SnsNotificationPublisher(settings=settings)
-    return NotificationService(notification_publisher=publisher)
 
 
 async def get_current_user(
