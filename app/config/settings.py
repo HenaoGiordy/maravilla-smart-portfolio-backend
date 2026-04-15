@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_use_tls: bool = True
     smtp_sender_email: str | None = None
+    smtp_timeout_seconds: int = 10
 
     # AWS SES (optional fallback)
     aws_ses_sender_email: str | None = None
