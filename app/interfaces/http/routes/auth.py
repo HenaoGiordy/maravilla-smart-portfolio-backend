@@ -180,6 +180,28 @@ def _dispatch_auth_notification(event_type: str, user_id: int, email: str, metad
     task.add_done_callback(_on_notification_task_done)
 
 
+async def _send_auth_notification_now(event_type: str, user_id: int, email: str, metadata: dict[str, Any]) -> None:
+    settings = get_settings()
+
+    if str(getattr(settings, "email_provider", "smtp")).lower() == "smtp":
+        await asyncio.to_thread(
+            _send_auth_notification_email_fallback,
+            event_type,
+            user_id,
+            email,
+            metadata,
+        )
+        return
+
+    notification_service = get_notification_service()
+    await notification_service.publish_event(
+        event_type=event_type,
+        user_id=user_id,
+        email=email,
+        metadata=metadata,
+    )
+
+
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(payload: UserCreate, session: Annotated[AsyncSession, Depends(get_db)]):
     if payload.password != payload.confirm_password:
@@ -416,14 +438,22 @@ async def update_notification_settings(
 
 @router.post("/notifications/send-now", response_model=MessageResponse)
 async def send_notification_now(current_user: Annotated[Any, Depends(get_current_user)]):
-    _dispatch_auth_notification(
-        event_type="variable_income_update",
-        user_id=current_user.id,
-        email=current_user.email,
-        metadata={
-            "category": "Renta Variable",
-            "segment": "Acciones y ETFs",
-            "assets": VARIABLE_INCOME_ASSETS,
-        },
-    )
-    return MessageResponse(message="Notification queued successfully")
+    try:
+        await _send_auth_notification_now(
+            event_type="variable_income_update",
+            user_id=current_user.id,
+            email=current_user.email,
+            metadata={
+                "category": "Renta Variable",
+                "segment": "Acciones y ETFs",
+                "assets": VARIABLE_INCOME_ASSETS,
+            },
+        )
+    except Exception as exc:
+        logger.exception("Unable to send manual notification for user_id=%s", current_user.id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"No se pudo enviar el correo: {exc}",
+        )
+
+    return MessageResponse(message="Notification sent successfully")
