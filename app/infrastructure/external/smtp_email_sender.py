@@ -1,5 +1,4 @@
 from email.message import EmailMessage
-import socket
 import smtplib
 
 from app.config.settings import Settings
@@ -8,18 +7,6 @@ from app.config.settings import Settings
 class SmtpEmailSender:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
-
-    @staticmethod
-    def _resolve_connection_host(host: str, port: int) -> str:
-        try:
-            addresses = socket.getaddrinfo(host, port, family=socket.AF_INET, type=socket.SOCK_STREAM)
-        except socket.gaierror:
-            return host
-
-        if not addresses:
-            return host
-
-        return str(addresses[0][4][0])
 
     def send_email(self, recipient_email: str, subject: str, text_body: str, html_body: str | None = None) -> None:
         host = self._settings.smtp_host.strip() if self._settings.smtp_host else None
@@ -47,11 +34,7 @@ class SmtpEmailSender:
         if "gmail.com" in host.lower() and password:
             password = password.replace(" ", "")
 
-        connection_host = self._resolve_connection_host(host, port)
-
-        with smtplib.SMTP(timeout=timeout_seconds) as smtp:
-            smtp.connect(connection_host, port)
-            smtp._host = host
+        with smtplib.SMTP(host, port, timeout=timeout_seconds) as smtp:
             if self._settings.smtp_use_tls:
                 smtp.starttls()
             if username and password:
